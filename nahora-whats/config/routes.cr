@@ -31,7 +31,8 @@ Amber::Server.configure do
   end
 
   routes :api do
-    resources "/users", UserController, except: [:new, :edit]
+    resources "/users", UserController, except: [:new, :edit, :show]
+    get "/users/:username", UserController, :show
   end
 
   routes :static do

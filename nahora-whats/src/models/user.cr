@@ -1,10 +1,21 @@
-class User < Granite::Base
-  connection pg
-  table users
+# Define the enum : https://clear.gitbook.io/project/additional-and-advanced-features/enums
+Clear.enum Gender, "male", "female"
+Clear.enum Renda, "male", "female"
 
-  column id : Int64, primary: true
+
+#CLEARCHANGE: https://github.com/anykeyh/clear/tree/master/manual/model/column-types / https://anykeyh.github.io/clear/Clear/Model.html
+class User
+  include Clear::Model
+  self.table = "users"
+
+  # primary_key
+  # column id : Int64, primary: true, presence: false
+  primary_key :id, type: :uuid
   column username : String
-  column age : Int32?
-  column phone : String?
+  column phone : String
+  column money : Float32?
+  column gender : Gender?
+  # column renda : Renda?
+  
   timestamps
 end

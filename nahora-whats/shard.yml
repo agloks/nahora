@@ -21,6 +21,10 @@ dependencies:
     version: 0.35.0
     #branch: master
 
+  clear:
+    github: anykeyh/clear
+    branch: master
+
   granite:
     github: amberframework/granite
     version: ~> 0.21.0

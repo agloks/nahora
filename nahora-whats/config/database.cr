@@ -1,3 +1,6 @@
-require "granite/adapter/pg"
+#CLEARCHANGE: https://clear.gitbook.io/project/introduction/installation
+require "clear"
 
-Granite::Connections << Granite::Adapter::Pg.new(name: "pg", url: ENV["DATABASE_URL"]? || Amber.settings.database_url)
+# initialize a pool of database connection:
+Clear::SQL.init(ENV["DATABASE_URL"]? || Amber.settings.database_url, 
+    connection_pool_size: 5)
