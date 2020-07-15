@@ -1,3 +1,4 @@
+#TODO find methor use SELECT *, perfomance from this method not is good than SELECT FIELD, adjust more later when is possile.
 class UserController < ApplicationController
   NOT_FOUND = {status: "not found"}.to_h
   BAD_REQUEST = {status: "bad request"}.to_h
@@ -12,11 +13,14 @@ class UserController < ApplicationController
 
   def show
     begin
-      user = User.query.find!( {username: params["username"]} )    
+      orderQuery = NamedTuple(username: String).from(user_params.validate!)
+      user = User.query.find!(orderQuery)
+      p user
       respond_with 200 do
         json user.to_json
       end
     rescue exception
+      p exception
       respond_with 422 do
         json BAD_REQUEST
       end      
@@ -39,24 +43,23 @@ class UserController < ApplicationController
   end
 
   def update
-    # if user = User.query.where({username: params["username"]})
-    # if user = User.find(params["id"])
-      # user.set_attributes(user_params.validate!)
-      if true
-        respond_with 200 do
-          json NOT_FOUND
-        end
-      else
-        respond_with 422 do
-          json NOT_FOUND
-        end
+    #REF UPDATE: https://github.com/anykeyh/clear/blob/master/spec/model/model_spec.cr
+    begin
+      queryUpdate = user_params_update.validate!.reject "phone"
+      User.query.where(
+        {phone: params["phone"]}
+        ).to_update.set(queryUpdate).execute
+      user = User.query.find!({phone: params["phone"]})
+
+      respond_with 201 do
+        json user.to_json
       end
-    # else
-    #   NOT_FOUND = {status: "not found"}
-    #   respond_with 404 do
-    #     json NOT_FOUND.to_json
-    #   end
-    # end
+    rescue exception
+      p exception
+      respond_with 422 do
+        json BAD_REQUEST
+      end
+    end
   end
 
   def destroy
@@ -82,6 +85,15 @@ class UserController < ApplicationController
     params.validation do
       required :username
       required :phone
+      optional :money
+      optional :gender
+    end
+  end
+
+  def user_params_update
+    params.validation do
+      required :phone
+      optional :username
       optional :money
       optional :gender
     end
