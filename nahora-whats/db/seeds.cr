@@ -5,6 +5,8 @@ require "../config/application"
 # To run seeds execute `amber db seed`
 
 # require "./migrations/1_create_user_migration"
+# require "./migrations/2_alter_user_migration"
+
 
 # p User.new({username: "mara", money: 30.20, gender: "female", phone: "40028922"}).save!
 # p User.new({username: "marala", money: 40.20, gender: "male", phone: "94002-8333"}).save!

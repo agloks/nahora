@@ -27,7 +27,7 @@
 
 4) everything already adjusted, now is the moment to remimber of this workflow to work with default migration amber together clear ORM.
 	4.1) first create database with 'amber db create'
-	4.2) now generate migration with 'amber db generate migration'
+	4.2) now generate migration with 'amber generate migration {action to be executed}'
 	4.3) now is the moment of the clear ORM script, create it into db/migrations in this format {number order this}_{action to be executed}_migration.cr
 	4.4) create the script and always put in the end script 'p Clear::Migration::Manager.instance.apply_all'
 		i.e:

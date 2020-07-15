@@ -35,6 +35,7 @@ class UserController < ApplicationController
         json user.to_json
       end
     rescue exception
+      p exception
       #TODO: Take the msg exception, and handle individual case appropriately. i.e: duplicate key error, invalid field in enum, etc.
       respond_with 422 do
         json BAD_REQUEST
@@ -103,6 +104,7 @@ class UserController < ApplicationController
       required :phone
       optional :money
       optional :gender
+      optional :budget 
     end
   end
 
@@ -112,6 +114,7 @@ class UserController < ApplicationController
       optional :username
       optional :money
       optional :gender
+      optional :budget 
     end
   end
 end
