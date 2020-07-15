@@ -1,0 +1,1 @@
+collection -> https://anykeyh.github.io/clear/Clear/Model/CollectionBase.html

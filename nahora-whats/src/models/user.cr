@@ -1,6 +1,6 @@
 # Define the enum : https://clear.gitbook.io/project/additional-and-advanced-features/enums
-Clear.enum Gender, "male", "female"
-Clear.enum Renda, "male", "female"
+Clear.enum Gender, "male", "female", "unknow"
+Clear.enum Renda, "low", "mid", "high", "unknow"
 
 
 #CLEARCHANGE: https://github.com/anykeyh/clear/tree/master/manual/model/column-types / https://anykeyh.github.io/clear/Clear/Model.html

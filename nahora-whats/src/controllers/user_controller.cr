@@ -1,7 +1,9 @@
 class UserController < ApplicationController
-  @a = {status: "not found"}
+  NOT_FOUND = {status: "not found"}.to_h
+  BAD_REQUEST = {status: "bad request"}.to_h
 
   def index
+    #TODO: pagination
     users = User.query.order_by("id").limit(10).map(&.to_h)
     respond_with 200 do
       json users.to_json
@@ -9,33 +11,30 @@ class UserController < ApplicationController
   end
 
   def show
-    #TODO: try catch here
-    # user_params.validate!
-    user = User.query.find!( {username: params["username"]} )
-    # p user.to_h
-    if true
+    begin
+      user = User.query.find!( {username: params["username"]} )    
       respond_with 200 do
         json user.to_json
       end
-    else
-      results = {status: "not found"}
-      respond_with 404 do
-        json results.to_json
-      end
+    rescue exception
+      respond_with 422 do
+        json BAD_REQUEST
+      end      
     end
   end
 
   def create
-    # user = User.new(user_params.validate!)
-    if true
+    begin
+      user = User.new(user_params_create.validate!)
+      user.save!
       respond_with 201 do
-        json @a.to_json
+        json user.to_json
       end
-    else
-      results = {status: "invalid"}
+    rescue exception
+      #TODO: Take the msg exception, and handle individual case appropriately. i.e: duplicate key error, invalid field in enum, etc.
       respond_with 422 do
-        json results.to_json
-      end
+        json BAD_REQUEST
+      end      
     end
   end
 
@@ -45,18 +44,17 @@ class UserController < ApplicationController
       # user.set_attributes(user_params.validate!)
       if true
         respond_with 200 do
-          json @a.to_json
+          json NOT_FOUND
         end
       else
-        results = {status: "invalid"}
         respond_with 422 do
-          json results.to_json
+          json NOT_FOUND
         end
       end
     # else
-    #   results = {status: "not found"}
+    #   NOT_FOUND = {status: "not found"}
     #   respond_with 404 do
-    #     json results.to_json
+    #     json NOT_FOUND.to_json
     #   end
     # end
   end
@@ -65,21 +63,27 @@ class UserController < ApplicationController
     if true
       # user.destroy
       respond_with 204 do
-         json @a.to_json
+         json NOT_FOUND
       end
     else
-      results = {status: "not found"}
       respond_with 404 do
-        json results.to_json
+        json NOT_FOUND
       end
     end
   end
 
   def user_params
-    p "into user_params"
-    p params.to_unsafe_h
     params.validation do
       required :username
+    end
+  end
+
+  def user_params_create
+    params.validation do
+      required :username
+      required :phone
+      optional :money
+      optional :gender
     end
   end
 end
