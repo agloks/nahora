@@ -63,12 +63,22 @@ class UserController < ApplicationController
   end
 
   def destroy
-    if true
-      # user.destroy
-      respond_with 204 do
-         json NOT_FOUND
-      end
-    else
+    #TIP more safely and robust way to do it: https://github.com/anykeyh/clear/blob/master/spec/sql/delete_spec.cr
+    # user = User.query.where(
+    #   {id: user_params_delete.validate!["id"]}
+    #   ).to_delete.execute
+    userParamID = user_params_delete.validate!["id"]
+    begin
+      user = User.query.select("id").find!({id: userParamID})
+      user.delete
+      deleted = {message: "#{user_params_delete.validate!["id"]} erased with sucesfull!"}
+      
+      #TODO: put code 204 to send no-content
+      respond_with 200 do
+        json deleted.to_json
+     end  
+    rescue exception
+      p exception
       respond_with 404 do
         json NOT_FOUND
       end
@@ -78,6 +88,12 @@ class UserController < ApplicationController
   def user_params
     params.validation do
       required :username
+    end
+  end
+
+  def user_params_delete
+    params.validation do
+      required :id
     end
   end
 
