@@ -25,6 +25,12 @@ dependencies:
     github: anykeyh/clear
     branch: master
 
+  crest:
+    github: mamantoha/crest
+  
+  google_maps_api:
+    github: fridgerator/google_maps_api
+  
   granite:
     github: amberframework/granite
     version: ~> 0.21.0

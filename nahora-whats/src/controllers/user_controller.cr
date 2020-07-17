@@ -13,7 +13,7 @@ class UserController < ApplicationController
 
   def show
     begin
-      orderQuery = NamedTuple(username: String).from(user_params.validate!)
+      orderQuery = NamedTuple(username: String).from(user_params_show.validate!)
       user = User.query.find!(orderQuery)
       p user
       respond_with 200 do
@@ -86,7 +86,7 @@ class UserController < ApplicationController
     end
   end
 
-  def user_params
+  def user_params_show
     params.validation do
       required :username
     end
