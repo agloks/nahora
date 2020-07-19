@@ -8,28 +8,31 @@ class Utilies
   extend UtiliesCacheBot
 end
 
-# result = Converter.extractConversations(Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + "bot_msg.json"))
-# p Utilies.getPhaseBlock(result, 0)
-# p Utilies.hasActionTextBlocks result[0]
-# p Utilies.getUpdateToPhase result[0]
-# p Utilies.getInternVariables result[1]
-
 #Inject here the variable provide by our integration conversation
 struct LetterToBOT
   property name, phone, text
 
   def initialize(@name : String, @phone : String, @text : String) end
+  
+  def to_h
+    {
+      "name" => name,
+      "phone" => phone,
+      "text" => text
+    }
+  end
 end
 
 abstract class IConversation
   abstract def initialize(botContext : Bot)
-  abstract def response() : String | Nil
+  abstract def response() : String
 end
 
 class Bot
   property phase_stage : AllType
   property conversation : IConversation | Nil #state
   property letter : LetterToBOT
+  property helpText : String | Nil
   property configBot : Hash(String, Array(Hash(String, Int32 | String | Nil)) | Array(String) | Bool | Int32 | String | Nil) | Nil
 
   def initialize(@letter : LetterToBOT, @configBotFile : String)
@@ -41,13 +44,14 @@ class Bot
     @phase_stage = phase
   end
 
-  def build
+  def build : Void
     cache = PATH_CACHES + "#{@letter.phone}.json"
     if(Utilies.cacheExists cache)
       cache_hash = Utilies.getFromFileCache(cache)
       @phase_stage = cache_hash[PHASE]
     end
     @configBot = up_configBot
+    @helpText = Utilies.getHelpText @configBot
   end
 
   def up_configBot : BlockTypeOne #Why here it's working and if put in property not work...
@@ -56,15 +60,36 @@ class Bot
     configBot
   end
 
-  def run
-    if(@configBot.not_nil![ACTION_RESULT_BLOCK])
-      @conversation = HandlerConversationAction.new self
+  def preprocess_intern_variables(text : String) : String | Bool
+    variables = Utilies.getInternVariables(@configBot.not_nil!)
+    options = @letter.to_h
+    if variables.is_a?(Array(String))
+      variables.not_nil!.each do |var|
+        text = text.gsub(/\#{#{var}}/, options[var])
+      end
     end
 
-    text = @conversation.not_nil!.response
-    set_phase @phase_stage
-    
-    text
+    text.is_a?(String) ? text : false
+  end
+
+  def run
+    begin
+      if(@configBot.not_nil![ACTION_RESULT_BLOCK])
+        @conversation = HandlerConversationAction.new self
+      end
+  
+      text = @conversation.not_nil!.response
+      text_preprocessed = preprocess_intern_variables text
+      
+      if text_preprocessed.is_a?(String)
+        text = text_preprocessed
+      end
+      
+      set_phase @phase_stage
+      text
+    rescue exception
+      @helpText
+    end
   end
 end
 
@@ -93,7 +118,7 @@ class HandlerConversationAction < IConversation
     -1
   end
 
-  def response : String | Nil    
+  def response : String
     actionCommands = build_commands.join("|")
     pattern = /.*(?<command>#{actionCommands}).*/mi
     result = pattern.match @botContext.letter.text
@@ -102,12 +127,14 @@ class HandlerConversationAction < IConversation
       blockMatched = get_blockMatched result.try &.["command"]
       if blockMatched != -1
         block = blockMatched.as(Hash(String, Int32 | String | Nil))
-        @botContext.phase_stage = block[UPDATE_TO_PHASE]
+        @botContext.phase_stage = block[UPDATE_TO_PHASE].as(AllType)
+       
         return block[TEXT_BLOCK].as(String)
       end
     end
 
-    "not found command"
+    #TODO: PUT DEFAULT HELP TEXT
+    @botContext.helpText.as(String)
   end
 end
 
@@ -117,84 +144,10 @@ class HandlerConversation < IConversation
   end
 
   def response : String
-    @botContext.letter.text
+    block = @botContext.configBot.not_nil!
+    text = block[TEXT_BLOCK]
+    @botContext.phase_stage = block[UPDATE_TO_PHASE].as(AllType)
+
+    text.as(String)
   end
 end
-
-letter = LetterToBOT.new "Amanda", "55119506934", "Quero comer"
-bot = Bot.new letter, "bot_msg.json"
-
-bot.build
-pp bot.run
-p bot.phase_stage
-
-# ------------------------------------------------------ TIP ------------------------------------------------------------------------ #
-
-# In all:
-#   
-# def _updateStage(self, level):
-#   self.phase_stage = level
-#   self.data_to_cache["phaseStagePerson"] = self.phase_stage
-#   self.data_to_cache["address"] = self.address  
-#   
-#   handlerJson.writeToJSONFile(self.data_to_cache, "./temp/", self.phone)
-
-# def phase_X(self):
-#   pattern = re.compile(".*((?P<number>1|2)|(?P<command>ajuda|comer))", re.I | re.M)
-#   regex_result = pattern.match(self.text)
-  
-#   self.commands = f'''
-#     1) Ajuda
-#     2) Comer
-#   '''
-
-#   if(regex_result == None):
-#     unknow_response(self.commands)
-#     return -1
-
-#   action = [item for item in regex_result.groupdict().values() if item != None][0].lower()
-#   if((action == "2") or (action == "comer")):
-#     self._updateStage(2)
-
-#   return stage_1(action)
-
-# class HandlerConversation(PhasesConversation):
-#   def __init__(self, name, phone, text):
-#     super().__init__(name, phone, text)
-#     self.name = name
-#     self.phone = phone
-#     self.text = text
-
-#   def run(self):
-#     #must to ben run at root folder project
-#     data_cached = handlerJson.loadJson("./temp/", self.phone)
-#     if(data_cached):
-#       #if it overcome the limit of the 2 min without update, reset the stage
-#       if(not isCached(data_cached)):
-#         self._updateStage(0)
-#         self.phase_stage = 0
-#       else:
-#         self.phase_stage = data_cached["phaseStagePerson"]
-#       #putting address to the class base manipulate
-#       if("address" in data_cached):
-#         self.address = data_cached["address"]
-
-#     phases = {
-#       0: self.phase_0,
-#       1: self.phase_1,
-#       2: self.phase_2,
-#       3: self.phase_3,
-#       4: self.phase_4,
-#       4.1: self.phase_4_01,
-#       4.2: self.phase_4_02
-#     }
-
-#     try:
-#       return phases[self.phase_stage]()
-#     except Exception as e:
-#       return unknow_response(self.commands)
-
-# for text in conversation_test_one:
-#   handlerConversation = HandlerConversation("Amanda", "551195069324", text)
-#   time.sleep(1)
-#   print(handlerConversation.run())

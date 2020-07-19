@@ -23,6 +23,7 @@ module ConverterBOT
           "internVariables" => c.internVariables,
           "updateToPhase" => c.updateToPhase,
           "textBlock" => c.textBlock,
+          "helpTextBlock" => c.helpTextBlock,
           "actionTextBlocks" => c.actionTextBlocks.is_a?(Array(BotMapped::ActionTextBlocks)) ? 
           _extractActionTextBlocks(c.actionTextBlocks.as(Array(BotMapped::ActionTextBlocks))) : nil
         }
@@ -41,6 +42,10 @@ module UtiliesBOT
     end
   end
   
+  def getHelpText(block) : String
+    block.not_nil![HELP_TEXT_BLOCK].as(String)
+  end
+
   def getUpdateToPhase(block) : AllInt | Nil
     #return the phase to update case exists, if not return nil
     temp_hash = block.select UPDATE_TO_PHASE

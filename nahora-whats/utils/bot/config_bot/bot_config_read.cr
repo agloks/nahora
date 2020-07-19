@@ -32,6 +32,9 @@ module BotMapped
     @[JSON::Field(key: "textBlock")]
     property textBlock : String?
       
+    @[JSON::Field(key: "helpTextBlock")]
+    property helpTextBlock : String?
+
     @[JSON::Field(key: "actionTextBlocks")]
     property actionTextBlocks : Array(ActionTextBlocks)?
   end

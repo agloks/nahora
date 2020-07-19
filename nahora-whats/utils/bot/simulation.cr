@@ -1,15 +1,5 @@
 require "./depedency"
 
-class Converter
-  extend ConverterBOT
-end
-class Utilies
-  extend UtiliesBOT
-  extend UtiliesCacheBot
-end
-
-configs = Converter.extractConversations(Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + "bot_msg.json"))
-
 fake_conversation = [
   "Oi",
   "Quero comer",
@@ -17,5 +7,9 @@ fake_conversation = [
 ]
 
 fake_conversation.each do |text|
-  p Utilies.getFromFileCache(PATH_CACHES + "55119506934.json")
+  letter = LetterToBOT.new "Amanda", "55119506934", text
+  bot = Bot.new letter, "bot_msg.json"
+
+  bot.build
+  pp bot.run
 end
