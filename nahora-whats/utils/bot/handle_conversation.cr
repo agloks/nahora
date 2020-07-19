@@ -1,11 +1,82 @@
-require "file"
+require "./depedency"
 
-require "./bot_config_read"
+include ConverterBOT
+include UtiliesBOT
 
-jsonFile = File.read("./bot_msg.json")
+# result = extractConversations(getFromFileConfiguration(PATH_CONFIG_BOT + "bot_msg.json"))
+# p getPhaseBlock(result, 0)
+# p hasActionTextBlocks result[0]
+# p getUpdateToPhase result[0]
+# p getInternVariables result[1]
 
-configs = BotUnmapped::Person.from_json(jsonFile).json_unmapped
+#Inject here the variable provide by our integration conversation
+struct LetterToBOT
+  property name, phone, text
 
+  def initialize(@name : String, @phone : String, @text : String) end
+end
+
+abstract class IConversation
+  abstract def initialize(botContext : Bot)
+  abstract def response() : String | Nil
+end
+
+class Bot
+  property phase_stage : AllInt
+  property conversation : IConversation | Nil #state
+  property letter : LetterToBOT
+
+  def initialize(@letter : LetterToBOT)
+    @phase_stage = 0
+    @conversation = HandlerConversation.new self
+  end
+
+  def set_phase(phase : AllInt)
+    @phase_stage = phase
+  end
+
+  def run
+    conversation = HandlerConversationAction.new self
+    conversation.response
+  end
+end
+
+class HandlerConversationAction < IConversation
+  property updateToPhase = 0
+
+  def initialize(botContext : Bot)
+    @botContext = botContext
+  end
+
+  def response : String | Nil
+    # pattern = /.*#{@actionCommand}.*/mi
+    pattern = /.*/mi
+    result = pattern.match @botContext.letter.text
+    if result != nil
+      @botContext.set_phase @updateToPhase
+    end
+
+    result.try &.string
+  end
+end
+
+class HandlerConversation < IConversation
+  def initialize(botContext : Bot)
+    @botContext = botContext
+  end
+
+  def response : String
+    @botContext.letter.text
+  end
+end
+
+letter = LetterToBOT.new "Amanda", "551195069324", "Quero comer"
+# p letter
+
+bot = Bot.new letter
+p bot.run
+
+# ------------------------------------------------------ TIP ------------------------------------------------------------------------ #
 
 # In all:
 #   
@@ -70,3 +141,8 @@ configs = BotUnmapped::Person.from_json(jsonFile).json_unmapped
 #       return phases[self.phase_stage]()
 #     except Exception as e:
 #       return unknow_response(self.commands)
+
+# for text in conversation_test_one:
+#   handlerConversation = HandlerConversation("Amanda", "551195069324", text)
+#   time.sleep(1)
+#   print(handlerConversation.run())
