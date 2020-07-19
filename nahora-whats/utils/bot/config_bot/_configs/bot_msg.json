@@ -15,13 +15,13 @@
       [
         {
           "actionCommand": "ajuda",
-          "updateToPhase": 1 ,
-          "textBlock": "Claro, eu sempre vou te enviar as opções para comando a cada conversa, você pode digitar o texto ou colocar o numero. No momento tenho os seguintes comando:\n 1) Ajuda\n 2) Comer"
+          "updateToPhase": 2,
+          "textBlock": "Claro, eu sempre vou te enviar as opções para comando a cada conversa, você pode digitar o texto ou colocar o numero. No momento tenho os seguintes comando:\n1) Ajuda\n2) Comer"
         },
         {
           "actionCommand": "comer",
-          "updateToPhase": 1 ,
-          "textBlock": "Pode me informe por favor em qual endereço você se encontra? Quanto mais informação como o modelo abaixo, melhor eu consigo te indicar =)\n Exemplo: Rua Santo Antonio, 601 - Bela Vista, São Paulo"
+          "updateToPhase": 2,
+          "textBlock": "Pode me informe por favor em qual endereço você se encontra? Quanto mais informação como o modelo abaixo, melhor eu consigo te indicar =)\nExemplo: Rua Santo Antonio, 601 - Bela Vista, São Paulo"
         }
       ]
     }

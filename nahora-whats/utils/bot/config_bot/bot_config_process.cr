@@ -34,7 +34,7 @@ module UtiliesBOT
   #block == the hash with the actual phase conversation
   #blocks == array with block
 
-  def getPhaseBlock(blocks, phase : Int64)
+  def getPhaseBlock(blocks, phase : AllInt)
     #return block case found, if not return nil
     blocks.each do |block|
       return block if block[PHASE] == phase

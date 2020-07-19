@@ -1,13 +1,18 @@
 require "./depedency"
 
-include ConverterBOT
-include UtiliesBOT
+class Converter
+  extend ConverterBOT
+end
+class Utilies
+  extend UtiliesBOT
+  extend UtiliesCacheBot
+end
 
-# result = extractConversations(getFromFileConfiguration(PATH_CONFIG_BOT + "bot_msg.json"))
-# p getPhaseBlock(result, 0)
-# p hasActionTextBlocks result[0]
-# p getUpdateToPhase result[0]
-# p getInternVariables result[1]
+# result = Converter.extractConversations(Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + "bot_msg.json"))
+# p Utilies.getPhaseBlock(result, 0)
+# p Utilies.hasActionTextBlocks result[0]
+# p Utilies.getUpdateToPhase result[0]
+# p Utilies.getInternVariables result[1]
 
 #Inject here the variable provide by our integration conversation
 struct LetterToBOT
@@ -22,41 +27,87 @@ abstract class IConversation
 end
 
 class Bot
-  property phase_stage : AllInt
+  property phase_stage : AllType
   property conversation : IConversation | Nil #state
   property letter : LetterToBOT
+  property configBot : Hash(String, Array(Hash(String, Int32 | String | Nil)) | Array(String) | Bool | Int32 | String | Nil) | Nil
 
-  def initialize(@letter : LetterToBOT)
+  def initialize(@letter : LetterToBOT, @configBotFile : String)
     @phase_stage = 0
     @conversation = HandlerConversation.new self
   end
 
-  def set_phase(phase : AllInt)
+  def set_phase(phase : AllType)
     @phase_stage = phase
   end
 
+  def build
+    cache = PATH_CACHES + "#{@letter.phone}.json"
+    if(Utilies.cacheExists cache)
+      cache_hash = Utilies.getFromFileCache(cache)
+      @phase_stage = cache_hash[PHASE]
+    end
+    @configBot = up_configBot
+  end
+
+  def up_configBot : BlockTypeOne #Why here it's working and if put in property not work...
+    result = Converter.extractConversations(Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + @configBotFile))
+    configBot = Utilies.getPhaseBlock(result, @phase_stage.as(AllInt))
+    configBot
+  end
+
   def run
-    conversation = HandlerConversationAction.new self
-    conversation.response
+    if(@configBot.not_nil![ACTION_RESULT_BLOCK])
+      @conversation = HandlerConversationAction.new self
+    end
+
+    text = @conversation.not_nil!.response
+    set_phase @phase_stage
+    
+    text
   end
 end
 
 class HandlerConversationAction < IConversation
-  property updateToPhase = 0
-
   def initialize(botContext : Bot)
     @botContext = botContext
+    @blocks = botContext.configBot.not_nil![ACTION_TEXT_BLOCKS].as(
+      Array(Hash(String, Int32 | String | Nil)) | Array(String)
+    )
   end
 
-  def response : String | Nil
-    # pattern = /.*#{@actionCommand}.*/mi
-    pattern = /.*/mi
+  def build_commands
+    commands = Array(String).new
+    @blocks.each do |block|
+      commands << block[ACTION_COMMAND].as(String)
+    end 
+    commands
+  end
+
+  def get_blockMatched(action)
+    @blocks.each do |block|
+      if(block[ACTION_COMMAND] == action)
+        return block
+      end
+    end
+    -1
+  end
+
+  def response : String | Nil    
+    actionCommands = build_commands.join("|")
+    pattern = /.*(?<command>#{actionCommands}).*/mi
     result = pattern.match @botContext.letter.text
+
     if result != nil
-      @botContext.set_phase @updateToPhase
+      blockMatched = get_blockMatched result.try &.["command"]
+      if blockMatched != -1
+        block = blockMatched.as(Hash(String, Int32 | String | Nil))
+        @botContext.phase_stage = block[UPDATE_TO_PHASE]
+        return block[TEXT_BLOCK].as(String)
+      end
     end
 
-    result.try &.string
+    "not found command"
   end
 end
 
@@ -70,11 +121,12 @@ class HandlerConversation < IConversation
   end
 end
 
-letter = LetterToBOT.new "Amanda", "551195069324", "Quero comer"
-# p letter
+letter = LetterToBOT.new "Amanda", "55119506934", "Quero comer"
+bot = Bot.new letter, "bot_msg.json"
 
-bot = Bot.new letter
-p bot.run
+bot.build
+pp bot.run
+p bot.phase_stage
 
 # ------------------------------------------------------ TIP ------------------------------------------------------------------------ #
 

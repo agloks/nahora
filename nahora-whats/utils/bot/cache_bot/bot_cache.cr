@@ -11,8 +11,8 @@ module CacheBotMapped
     @[JSON::Field(key: "phonePerson")]
     property phonePerson : String?
       
-    @[JSON::Field(key: "phaseStagePerson")]
-    property phaseStagePerson : Int32 | Int64 | Nil
+    @[JSON::Field(key: "phase")]
+    property phase : Int32 | Int64 | Nil
     
     @[JSON::Field(key: "address")]
     property address : String?
@@ -27,17 +27,13 @@ module UtiliesCacheBot
     File.exists?(path)
   end
 
-  def getFromFileCache(path : String)
-    if !cacheExists path
-      return "Cache doesn't exists"
-    end
-    
+  def getFromFileCache(path : String)    
     jsonFile = File.read(path)
     cache = CacheBotMapped::Cache.from_json(jsonFile)
     cache_hash = {
       "namePerson" => cache.namePerson,
       "phonePerson" => cache.phonePerson,
-      "phaseStagePerson" => cache.phaseStagePerson,
+      "phase" => cache.phase,
       "address" => cache.address,
       "timeUnixEpoch" => cache.timeUnixEpoch
     }
