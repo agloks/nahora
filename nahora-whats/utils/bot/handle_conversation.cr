@@ -144,6 +144,8 @@ class Bot
 end
 
 class HandlerConversationAction < IConversation
+  getter botContext : Bot
+
   def initialize(botContext : Bot)
     @botContext = botContext
     @blocks = botContext.configBot.not_nil![ACTION_TEXT_BLOCKS].as(
@@ -188,6 +190,8 @@ class HandlerConversationAction < IConversation
 end
 
 class HandlerConversation < IConversation
+  getter botContext : Bot
+
   def initialize(botContext : Bot)
     @botContext = botContext
   end
