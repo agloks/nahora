@@ -11,11 +11,18 @@ describe Bot do
       bot.should be_a(Bot)
     end
 
+    #Sometimes here give error, and others not because ->
+      #@blocks = botContext.configBot.not_nil![ACTION_TEXT_BLOCKS].as(
+      #  Array(Hash(String, Int32 | String | Nil)) | Array(String)
+      #)
+    #botContext.configBot is coming nil because of async operation time of process (I think the reason is the async I/O that read config from json)
     it "context of state classes should be the bot class", tags: "integration" do
       letter = LetterToBOT.new "Amanda", "1", "oi"
       bot = Bot.new letter, "bot_msg.json"
       bot.build
 
+      sleep(0.05) #Putting sleep, the error of configBot is null not happen, but this solution not is so good as could be
+      
       handler_with_action = HandlerConversationAction.new bot
       handler_without_action = HandlerConversation.new bot
 
