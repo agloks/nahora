@@ -1,0 +1,1 @@
+ROOT_PATH = "/home/agl/Public/amber/nahora/nahora-whats"

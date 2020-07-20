@@ -8,7 +8,7 @@ module BotMapped
     property actionCommand : String
 
     @[JSON::Field(key: "updateToPhase")]
-    property updateToPhase : Float32
+    property updateToPhase : Int32
       
     @[JSON::Field(key: "textBlock")]
     property textBlock : String?
@@ -18,7 +18,7 @@ module BotMapped
     include JSON::Serializable
 
     @[JSON::Field(key:"phase")]
-    property phase : Float32
+    property phase : Int32
     
     @[JSON::Field(key: "actionResultBlock")]
     property actionResultBlock : Bool
@@ -27,11 +27,14 @@ module BotMapped
     property internVariables : Array(String)?
     
     @[JSON::Field(key: "updateToPhase")]
-    property updateToPhase : Float32?
+    property updateToPhase : Int32?
 
     @[JSON::Field(key: "textBlock")]
     property textBlock : String?
       
+    @[JSON::Field(key: "helpTextBlock")]
+    property helpTextBlock : String?
+
     @[JSON::Field(key: "actionTextBlocks")]
     property actionTextBlocks : Array(ActionTextBlocks)?
   end

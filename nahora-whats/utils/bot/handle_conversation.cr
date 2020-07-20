@@ -1,72 +1,153 @@
-require "file"
+require "./depedency"
 
-require "./bot_config_read"
+class Converter
+  extend ConverterBOT
+end
+class Utilies
+  extend UtiliesBOT
+  extend UtiliesCacheBot
+end
 
-jsonFile = File.read("./bot_msg.json")
+#Inject here the variable provide by our integration conversation
+struct LetterToBOT
+  property name, phone, text
 
-configs = BotUnmapped::Person.from_json(jsonFile).json_unmapped
-
-
-# In all:
-#   
-# def _updateStage(self, level):
-#   self.phase_stage = level
-#   self.data_to_cache["phaseStagePerson"] = self.phase_stage
-#   self.data_to_cache["address"] = self.address  
-#   
-#   handlerJson.writeToJSONFile(self.data_to_cache, "./temp/", self.phone)
-
-# def phase_X(self):
-#   pattern = re.compile(".*((?P<number>1|2)|(?P<command>ajuda|comer))", re.I | re.M)
-#   regex_result = pattern.match(self.text)
+  def initialize(@name : String, @phone : String, @text : String) end
   
-#   self.commands = f'''
-#     1) Ajuda
-#     2) Comer
-#   '''
+  def to_h
+    {
+      "name" => name,
+      "phone" => phone,
+      "text" => text
+    }
+  end
+end
 
-#   if(regex_result == None):
-#     unknow_response(self.commands)
-#     return -1
+abstract class IConversation
+  abstract def initialize(botContext : Bot)
+  abstract def response() : String
+end
 
-#   action = [item for item in regex_result.groupdict().values() if item != None][0].lower()
-#   if((action == "2") or (action == "comer")):
-#     self._updateStage(2)
+class Bot
+  property phase_stage : AllType
+  property conversation : IConversation | Nil #state
+  property letter : LetterToBOT
+  property helpText : String | Nil
+  property configBot : Hash(String, Array(Hash(String, Int32 | String | Nil)) | Array(String) | Bool | Int32 | String | Nil) | Nil
 
-#   return stage_1(action)
+  def initialize(@letter : LetterToBOT, @configBotFile : String)
+    @phase_stage = 0
+    @conversation = HandlerConversation.new self
+  end
 
-# class HandlerConversation(PhasesConversation):
-#   def __init__(self, name, phone, text):
-#     super().__init__(name, phone, text)
-#     self.name = name
-#     self.phone = phone
-#     self.text = text
+  def set_phase(phase : AllType)
+    @phase_stage = phase
+  end
 
-#   def run(self):
-#     #must to ben run at root folder project
-#     data_cached = handlerJson.loadJson("./temp/", self.phone)
-#     if(data_cached):
-#       #if it overcome the limit of the 2 min without update, reset the stage
-#       if(not isCached(data_cached)):
-#         self._updateStage(0)
-#         self.phase_stage = 0
-#       else:
-#         self.phase_stage = data_cached["phaseStagePerson"]
-#       #putting address to the class base manipulate
-#       if("address" in data_cached):
-#         self.address = data_cached["address"]
+  def build : Void
+    cache = PATH_CACHES + "#{@letter.phone}.json"
+    if(Utilies.cacheExists cache)
+      cache_hash = Utilies.getFromFileCache(cache)
+      @phase_stage = cache_hash[PHASE]
+    end
+    @configBot = up_configBot
+    @helpText = Utilies.getHelpText @configBot
+  end
 
-#     phases = {
-#       0: self.phase_0,
-#       1: self.phase_1,
-#       2: self.phase_2,
-#       3: self.phase_3,
-#       4: self.phase_4,
-#       4.1: self.phase_4_01,
-#       4.2: self.phase_4_02
-#     }
+  def up_configBot : BlockTypeOne #Why here it's working and if put in property not work...
+    result = Converter.extractConversations(Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + @configBotFile))
+    configBot = Utilies.getPhaseBlock(result, @phase_stage.as(AllInt))
+    configBot
+  end
 
-#     try:
-#       return phases[self.phase_stage]()
-#     except Exception as e:
-#       return unknow_response(self.commands)
+  def preprocess_intern_variables(text : String) : String | Bool
+    variables = Utilies.getInternVariables(@configBot.not_nil!)
+    options = @letter.to_h
+    if variables.is_a?(Array(String))
+      variables.not_nil!.each do |var|
+        text = text.gsub(/\#{#{var}}/, options[var])
+      end
+    end
+
+    text.is_a?(String) ? text : false
+  end
+
+  def run
+    begin
+      if(@configBot.not_nil![ACTION_RESULT_BLOCK])
+        @conversation = HandlerConversationAction.new self
+      end
+  
+      text = @conversation.not_nil!.response
+      text_preprocessed = preprocess_intern_variables text
+      
+      if text_preprocessed.is_a?(String)
+        text = text_preprocessed
+      end
+      
+      set_phase @phase_stage
+      text
+    rescue exception
+      @helpText
+    end
+  end
+end
+
+class HandlerConversationAction < IConversation
+  def initialize(botContext : Bot)
+    @botContext = botContext
+    @blocks = botContext.configBot.not_nil![ACTION_TEXT_BLOCKS].as(
+      Array(Hash(String, Int32 | String | Nil)) | Array(String)
+    )
+  end
+
+  def build_commands
+    commands = Array(String).new
+    @blocks.each do |block|
+      commands << block[ACTION_COMMAND].as(String)
+    end 
+    commands
+  end
+
+  def get_blockMatched(action)
+    @blocks.each do |block|
+      if(block[ACTION_COMMAND] == action)
+        return block
+      end
+    end
+    -1
+  end
+
+  def response : String
+    actionCommands = build_commands.join("|")
+    pattern = /.*(?<command>#{actionCommands}).*/mi
+    result = pattern.match @botContext.letter.text
+
+    if result != nil
+      blockMatched = get_blockMatched result.try &.["command"]
+      if blockMatched != -1
+        block = blockMatched.as(Hash(String, Int32 | String | Nil))
+        @botContext.phase_stage = block[UPDATE_TO_PHASE].as(AllType)
+       
+        return block[TEXT_BLOCK].as(String)
+      end
+    end
+
+    #TODO: PUT DEFAULT HELP TEXT
+    @botContext.helpText.as(String)
+  end
+end
+
+class HandlerConversation < IConversation
+  def initialize(botContext : Bot)
+    @botContext = botContext
+  end
+
+  def response : String
+    block = @botContext.configBot.not_nil!
+    text = block[TEXT_BLOCK]
+    @botContext.phase_stage = block[UPDATE_TO_PHASE].as(AllType)
+
+    text.as(String)
+  end
+end
