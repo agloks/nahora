@@ -1,5 +1,6 @@
 #The ORDER does total difference, be careful
 require "file"
+require "time"
 require "./config_bot/bot_config_read"
 require "./config_bot/bot_config_process"
 require "./cache_bot/bot_cache"
@@ -15,6 +16,8 @@ ACTION_COMMAND = "actionCommand"
 INTERN_VARIABLES = "internVariables"
 PATH_CACHES = ROOT_PATH + "/utils/bot/cache_bot/_caches/"
 PATH_CONFIG_BOT = ROOT_PATH + "/utils/bot/config_bot/_configs/"
+TIME_UNIX_CACHED = "timeUnixEpoch"
+MAX_MINUTES_CACHE = 1
 
 alias AllInt = Int8 | Int16 | Int32 | Int64
 alias AllType = Float32 | Float64 | Int16 | Int32 | Int64 | Int8 | String | Nil

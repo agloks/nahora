@@ -26,6 +26,17 @@
         }
       ],
       "helpTextBlock": "Se é burro em novamente é?"
+    },
+    {
+      "phase": 2,
+      "actionResultBlock": false,
+      "updateToPhase": 3,
+      "textBlock": "Legal, gostei de você\n*--------------------*",
+      "helpTextBlock": "Não é mole não"
     }
-  ]  
+  ],
+  "metadata": 
+  {
+    "maxPhase": 2
+  }  
 }

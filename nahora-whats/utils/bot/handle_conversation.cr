@@ -8,6 +8,16 @@ class Utilies
   extend UtiliesCacheBot
 end
 
+def minutesToSecond(min : AllInt) : AllInt
+  min * 60
+end
+
+def isInCacheTime(unixTimeCached : AllInt) : Bool
+  max_time = minutesToSecond(MAX_MINUTES_CACHE)
+  
+  unixTimeCached > (Time.utc.to_unix - max_time) ? true : false
+end 
+
 #Inject here the variable provide by our integration conversation
 struct LetterToBOT
   property name, phone, text
@@ -20,6 +30,32 @@ struct LetterToBOT
       "phone" => phone,
       "text" => text
     }
+  end
+end
+
+struct CacheToSave
+  property cache_hash : Hash(String, AllType) = Hash(String, AllType).new
+
+  def initialize(@bot : Bot)  
+  end
+
+  def build_cache
+    metadata = @bot.get_metadata
+
+    @cache_hash["namePerson"] = @bot.letter.name
+    @cache_hash["phonePerson"] = @bot.letter.phone
+    @cache_hash["address"] = @bot.letter.phone
+    @cache_hash["phase"] = @bot.phase_stage.as(AllInt) > metadata.not_nil!.maxPhase ? 0 : @bot.phase_stage
+    #TODO: get time unix epoch
+    @cache_hash["timeUnixEpoch"] = Time.utc.to_unix
+
+    @cache_hash.to_json
+  end
+
+  def save(name : String)
+    cache = build_cache
+
+    Utilies.saveCache(PATH_CACHES + name + ".json", cache)
   end
 end
 
@@ -47,16 +83,23 @@ class Bot
   def build : Void
     cache = PATH_CACHES + "#{@letter.phone}.json"
     if(Utilies.cacheExists cache)
+      #TODO: Control time here
       cache_hash = Utilies.getFromFileCache(cache)
-      @phase_stage = cache_hash[PHASE]
+      @phase_stage = isInCacheTime(cache_hash[TIME_UNIX_CACHED].as(AllInt)) ? cache_hash[PHASE] : 0
     end
     @configBot = up_configBot
     @helpText = Utilies.getHelpText @configBot
   end
 
   def up_configBot : BlockTypeOne #Why here it's working and if put in property not work...
-    result = Converter.extractConversations(Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + @configBotFile))
-    configBot = Utilies.getPhaseBlock(result, @phase_stage.as(AllInt))
+    _configs = Utilies.getFromFileConfiguration(PATH_CONFIG_BOT + @configBotFile)
+    
+    blocks = _configs["blocks"].as(Array(BotMapped::Conversation))
+    @metadata = _configs["metadata"].as(BotMapped::Metadata)
+    
+    conversations = Converter.extractConversations(blocks)
+    configBot = Utilies.getPhaseBlock(conversations, @phase_stage.as(AllInt))
+    
     configBot
   end
 
@@ -72,6 +115,10 @@ class Bot
     text.is_a?(String) ? text : false
   end
 
+  def get_metadata
+    @metadata
+  end
+
   def run
     begin
       if(@configBot.not_nil![ACTION_RESULT_BLOCK])
@@ -84,10 +131,13 @@ class Bot
       if text_preprocessed.is_a?(String)
         text = text_preprocessed
       end
+      cache = CacheToSave.new self
+      cache.save(@letter.phone)
       
       set_phase @phase_stage
       text
     rescue exception
+      p exception
       @helpText
     end
   end
@@ -111,7 +161,7 @@ class HandlerConversationAction < IConversation
 
   def get_blockMatched(action)
     @blocks.each do |block|
-      if(block[ACTION_COMMAND] == action)
+      if(block[ACTION_COMMAND].as(String).upcase == action.as(String).upcase)
         return block
       end
     end
@@ -133,7 +183,6 @@ class HandlerConversationAction < IConversation
       end
     end
 
-    #TODO: PUT DEFAULT HELP TEXT
     @botContext.helpText.as(String)
   end
 end
