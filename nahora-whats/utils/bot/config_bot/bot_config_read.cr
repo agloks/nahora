@@ -39,10 +39,20 @@ module BotMapped
     property actionTextBlocks : Array(ActionTextBlocks)?
   end
 
+  class Metadata
+    include JSON::Serializable
+
+    @[JSON::Field(key: "maxPhase")]
+    property maxPhase : Int32    
+  end
+
   class Blocks
     include JSON::Serializable
 
     @[JSON::Field(key: "blocks")]
     property blocks : Array(Conversation)
+
+    @[JSON::Field(key: "metadata")]
+    property metadata : Metadata
   end
 end

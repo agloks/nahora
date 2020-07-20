@@ -70,7 +70,10 @@ module UtiliesBOT
     jsonFile = File.read(path)
     blocks = BotMapped::Blocks.from_json(jsonFile)
 
-    blocks.blocks
+    {
+     "blocks" => blocks.blocks,
+     "metadata" => blocks.metadata
+    }
   end
 end
 

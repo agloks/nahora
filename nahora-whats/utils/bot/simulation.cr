@@ -3,13 +3,17 @@ require "./depedency"
 fake_conversation = [
   "Oi",
   "Quero comer",
-  "Mais próximos"
+  "Mais próximos",
+  "MEEE CoMEr"
 ]
 
-fake_conversation.each do |text|
-  letter = LetterToBOT.new "Amanda", "55119506934", text
-  bot = Bot.new letter, "bot_msg.json"
-
-  bot.build
-  pp bot.run
+while true
+  fake_conversation.each do |text|
+    letter = LetterToBOT.new "Amanda", "1", text
+    bot = Bot.new letter, "bot_msg.json"
+  
+    bot.build
+    pp bot.run
+    sleep(1)
+  end  
 end

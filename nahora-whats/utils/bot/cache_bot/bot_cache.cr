@@ -46,4 +46,9 @@ module UtiliesCacheBot
       File.delete(path)
     end
   end
+
+  def saveCache(path : String, content)
+    # TODO: throw error instead false
+    File.write(path, content, mode: "w")
+  end
 end
